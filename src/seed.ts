@@ -25,7 +25,7 @@ async function seed() {
     role: 'System Supervisor',
     avatarUrl: '',
     isAdmin: true,
-    permissions: ['dashboard', 'lists', 'compose', 'admin'],
+    permissions: ['dashboard', 'lists', 'compose', 'admin', 'chat'],
   });
 
   console.log('Created admin user (admin@broadcast.com / admin123)');
@@ -47,6 +47,12 @@ async function seed() {
       key: 'WHATSAPP_BUSINESS_ACCOUNT_ID',
       value: '',
       description: 'WhatsApp Cloud API - WABA ID',
+      category: 'api',
+    },
+    {
+      key: 'WHATSAPP_VERIFY_TOKEN',
+      value: 'broadcast_verify',
+      description: 'WhatsApp Webhook Verify Token',
       category: 'api',
     },
     {
