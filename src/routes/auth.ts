@@ -20,8 +20,9 @@ router.post('/login', async (req: Request, res: Response) => {
       res.status(401).json({ error: 'Invalid credentials' });
       return;
     }
-    const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ user, token });
+    const token = jwt.sign({ userId: user._id, isAdmin: user.isAdmin }, JWT_SECRET, { expiresIn: '7d' });
+    const { password: _, ...userWithoutPassword } = user.toObject();
+    res.json({ user: userWithoutPassword, token });
   } catch (error) {
     res.status(500).json({ error: 'Login failed' });
   }
@@ -37,8 +38,9 @@ router.post('/register', async (req: Request, res: Response) => {
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({ username, email, password: hashedPassword });
-    const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
-    res.status(201).json({ user, token });
+    const token = jwt.sign({ userId: user._id, isAdmin: user.isAdmin }, JWT_SECRET, { expiresIn: '7d' });
+    const { password: _, ...userWithoutPassword } = user.toObject();
+    res.status(201).json({ user: userWithoutPassword, token });
   } catch (error) {
     res.status(500).json({ error: 'Registration failed' });
   }
@@ -46,7 +48,7 @@ router.post('/register', async (req: Request, res: Response) => {
 
 router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const user = await User.findById(req.userId);
+    const user = await User.findById(req.userId).select('-password');
     if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;

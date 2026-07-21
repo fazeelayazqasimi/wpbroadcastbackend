@@ -1,9 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { TargetList } from '../models/TargetList.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { requirePermission } from '../middleware/permission.js';
 
 const router = Router();
 router.use(authMiddleware);
+router.use(requirePermission('lists'));
 
 router.get('/', async (_req: Request, res: Response) => {
   try {

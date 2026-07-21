@@ -2,9 +2,11 @@ import { Router, Request, Response } from 'express';
 import { Contact } from '../models/Contact.js';
 import { TargetList } from '../models/TargetList.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { requirePermission } from '../middleware/permission.js';
 
 const router = Router();
 router.use(authMiddleware);
+router.use(requirePermission('lists'));
 
 router.get('/list/:listId', async (req: Request, res: Response) => {
   try {

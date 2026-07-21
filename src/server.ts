@@ -7,6 +7,7 @@ import listRoutes from './routes/lists.js';
 import contactRoutes from './routes/contacts.js';
 import broadcastRoutes from './routes/broadcasts.js';
 import templateRoutes from './routes/templates.js';
+import adminRoutes from './routes/admin.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -19,6 +20,7 @@ app.use('/api/lists', listRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/broadcasts', broadcastRoutes);
 app.use('/api/templates', templateRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

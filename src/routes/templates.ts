@@ -1,9 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { Template } from '../models/Template.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { requirePermission } from '../middleware/permission.js';
 
 const router = Router();
 router.use(authMiddleware);
+router.use(requirePermission('compose'));
 
 router.get('/', async (_req: Request, res: Response) => {
   try {

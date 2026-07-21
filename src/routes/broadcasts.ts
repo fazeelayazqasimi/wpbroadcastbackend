@@ -1,9 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { BroadcastLog } from '../models/BroadcastLog.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { requirePermission } from '../middleware/permission.js';
 
 const router = Router();
 router.use(authMiddleware);
+router.use(requirePermission('dashboard'));
 
 router.get('/', async (_req: Request, res: Response) => {
   try {

@@ -6,6 +6,8 @@ export interface IUser extends Document {
   password: string;
   role: string;
   avatarUrl: string;
+  isAdmin: boolean;
+  permissions: string[];
 }
 
 const UserSchema = new Schema<IUser>(
@@ -15,6 +17,8 @@ const UserSchema = new Schema<IUser>(
     password: { type: String, required: true },
     role: { type: String, default: 'Operator' },
     avatarUrl: { type: String, default: '' },
+    isAdmin: { type: Boolean, default: false },
+    permissions: { type: [String], default: ['dashboard', 'lists', 'compose'] },
   },
   { timestamps: true }
 );
