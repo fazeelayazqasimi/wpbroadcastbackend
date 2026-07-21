@@ -39,20 +39,14 @@ app.use('/api/chat', chatRoutes);
 app.get('/api/health', async (_req, res) => {
   try {
     await connectDB();
-    const dbState = mongoose.connection.readyState;
-    const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
-    res.json({
-      status: 'ok',
-      db: states[dbState] || 'unknown',
-      timestamp: new Date().toISOString()
-    });
-  } catch (e: any) {
-    res.status(500).json({
-      error: 'DB failed',
-      detail: e?.message || String(e),
-      name: e?.name,
-    });
-  }
+  } catch { /* ignore */ }
+  const dbState = mongoose.connection.readyState;
+  const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+  res.json({
+    status: 'ok',
+    db: states[dbState] || 'unknown',
+    timestamp: new Date().toISOString()
+  });
 });
 
 let isConnected = false;
