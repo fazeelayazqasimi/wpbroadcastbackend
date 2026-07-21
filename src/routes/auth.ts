@@ -3,13 +3,19 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
+import { connectDB } from '../config/db.js';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'broadcast_panel_jwt_secret_key_2026';
 
 router.post('/login', async (req: Request, res: Response) => {
   try {
+    await connectDB();
     const { email, password } = req.body;
+    if (!email || !password) {
+      res.status(400).json({ error: 'Email and password required' });
+      return;
+    }
     const user = await User.findOne({ email });
     if (!user) {
       res.status(401).json({ error: 'Invalid credentials' });
@@ -23,8 +29,8 @@ router.post('/login', async (req: Request, res: Response) => {
     const token = jwt.sign({ userId: user._id, isAdmin: user.isAdmin }, JWT_SECRET, { expiresIn: '7d' });
     const { password: _, ...userWithoutPassword } = user.toObject();
     res.json({ user: userWithoutPassword, token });
-  } catch (error) {
-    res.status(500).json({ error: 'Login failed' });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Login failed', detail: error?.message || String(error) });
   }
 });
 

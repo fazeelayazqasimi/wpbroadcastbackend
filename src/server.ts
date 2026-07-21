@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import mongoose from 'mongoose';
 import { connectDB } from './config/db.js';
 import authRoutes from './routes/auth.js';
 import listRoutes from './routes/lists.js';
@@ -35,8 +36,35 @@ app.use('/api/templates', templateRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/chat', chatRoutes);
 
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/api/health', async (_req, res) => {
+  try {
+    await connectDB();
+    const dbState = mongoose.connection.readyState;
+    const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+    res.json({ status: 'ok', db: states[dbState] || 'unknown', timestamp: new Date().toISOString() });
+  } catch (e: any) {
+    res.status(500).json({ error: 'DB failed', detail: e?.message });
+  }
+});
+
+app.get('/api/db-check', async (_req, res) => {
+  try {
+    await connectDB();
+    const { User } = await import('./models/User.js');
+    const count = await User.countDocuments();
+    res.json({ connected: true, userCount: count });
+  } catch (e: any) {
+    res.status(500).json({ connected: false, error: e?.message, stack: e?.stack?.split('\n').slice(0, 5) });
+  }
+});
+
+app.get('/api/debug-env', (_req, res) => {
+  res.json({
+    hasMongo: !!process.env.MONGO_URI,
+    hasJwt: !!process.env.JWT_SECRET,
+    vercel: process.env.VERCEL,
+    nodeEnv: process.env.NODE_ENV,
+  });
 });
 
 if (process.env.VERCEL !== '1') {
