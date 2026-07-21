@@ -15,6 +15,17 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+if (process.env.VERCEL === '1') {
+  app.use('/api', async (_req, _res, next) => {
+    try {
+      await connectDB();
+      next();
+    } catch {
+      _res.status(500).json({ error: 'Database connection failed' });
+    }
+  });
+}
+
 app.use('/api/auth', authRoutes);
 app.use('/api/lists', listRoutes);
 app.use('/api/contacts', contactRoutes);
