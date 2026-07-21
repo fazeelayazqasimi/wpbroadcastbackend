@@ -5,7 +5,7 @@ import { Setting } from './models/Setting.js';
 import { Template } from './models/Template.js';
 import { TargetList } from './models/TargetList.js';
 import { Contact } from './models/Contact.js';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 async function seed() {
   await connectDB();

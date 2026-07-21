@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
 import { Setting } from '../models/Setting.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
