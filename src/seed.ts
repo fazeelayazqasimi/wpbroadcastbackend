@@ -10,25 +10,29 @@ import bcrypt from 'bcryptjs';
 async function seed() {
   await connectDB();
 
-  const existingUser = await User.findOne({ email: 'admin@broadcast.com' });
-  if (existingUser) {
+  const existingSettings = await Setting.findOne({ key: 'WHATSAPP_ACCESS_TOKEN' });
+  if (existingSettings) {
     console.log('Seed data already exists, skipping.');
     process.exit(0);
   }
 
   const hashedPassword = await bcrypt.hash('admin123', 10);
 
-  await User.create({
-    username: 'Administrator',
-    email: 'admin@broadcast.com',
-    password: hashedPassword,
-    role: 'System Supervisor',
-    avatarUrl: '',
-    isAdmin: true,
-    permissions: ['dashboard', 'lists', 'compose', 'admin', 'chat'],
-  });
-
-  console.log('Created admin user (admin@broadcast.com / admin123)');
+  const existingUser = await User.findOne({ email: 'admin@broadcast.com' });
+  if (!existingUser) {
+    await User.create({
+      username: 'Administrator',
+      email: 'admin@broadcast.com',
+      password: hashedPassword,
+      role: 'System Supervisor',
+      avatarUrl: '',
+      isAdmin: true,
+      permissions: ['dashboard', 'lists', 'compose', 'admin', 'chat'],
+    });
+    console.log('Created admin user (admin@broadcast.com / admin123)');
+  } else {
+    console.log('Admin user already exists, skipping.');
+  }
 
   await Setting.create([
     {
