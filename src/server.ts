@@ -41,11 +41,21 @@ app.get('/api/health', async (_req, res) => {
     await connectDB();
     const dbState = mongoose.connection.readyState;
     const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
-    res.json({ status: 'ok', db: states[dbState] || 'unknown', timestamp: new Date().toISOString() });
+    res.json({
+      status: 'ok',
+      db: states[dbState] || 'unknown',
+      timestamp: new Date().toISOString()
+    });
   } catch (e: any) {
-    res.status(500).json({ error: 'DB failed', detail: e?.message });
+    res.status(500).json({
+      error: 'DB failed',
+      detail: e?.message || String(e),
+      name: e?.name,
+    });
   }
 });
+
+let isConnected = false;
 
 app.get('/api/db-check', async (_req, res) => {
   try {

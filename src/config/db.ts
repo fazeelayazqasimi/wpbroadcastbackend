@@ -1,9 +1,11 @@
 import mongoose from 'mongoose';
 
 let isConnected = false;
+let connecting: Promise<void> | null = null;
 
 export async function connectDB(): Promise<void> {
   if (isConnected) return;
+  if (connecting) return connecting;
 
   const uri = process.env.MONGO_URI;
   if (!uri) {
@@ -12,14 +14,19 @@ export async function connectDB(): Promise<void> {
     return;
   }
 
-  try {
-    await mongoose.connect(uri);
+  connecting = mongoose.connect(uri, {
+    serverSelectionTimeoutMS: 10000,
+    connectTimeoutMS: 10000,
+    socketTimeoutMS: 30000,
+  }).then(() => {
     isConnected = true;
+    connecting = null;
     console.log('MongoDB connected successfully');
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    if (process.env.VERCEL !== '1') process.exit(1);
-  }
+  }).catch((error) => {
+    connecting = null;
+    console.error('MongoDB connection error:', error?.message || error);
+    throw error;
+  });
 
   mongoose.connection.on('error', (err) => {
     console.error('MongoDB runtime error:', err);
@@ -29,4 +36,6 @@ export async function connectDB(): Promise<void> {
     isConnected = false;
     console.warn('MongoDB disconnected');
   });
+
+  return connecting;
 }
