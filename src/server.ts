@@ -71,6 +71,38 @@ app.get('/api/debug-env', (_req, res) => {
   });
 });
 
+app.post('/api/debug-login', async (req, res) => {
+  try {
+    await connectDB();
+    const { User } = await import('./models/User.js');
+    const bcrypt = await import('bcryptjs');
+    const { email, password } = req.body;
+    const user = await User.findOne({ email }).select('+password');
+    if (!user) {
+      res.json({ found: false, email });
+      return;
+    }
+    let match = false;
+    let compareError = null;
+    try {
+      match = await bcrypt.compare(password, user.password);
+    } catch (e: any) {
+      compareError = e.message;
+    }
+    res.json({
+      found: true,
+      email: user.email,
+      isAdmin: user.isAdmin,
+      passwordHash: user.password?.substring(0, 20) + '...',
+      match,
+      compareError,
+      dbState: mongoose.connection.readyState,
+    });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message, stack: e.stack?.split('\n').slice(0, 3) });
+  }
+});
+
 if (process.env.VERCEL !== '1') {
   async function start() {
     await connectDB();
