@@ -13,21 +13,24 @@ async function reset() {
   if (existing) {
     existing.password = hashedPassword;
     existing.isAdmin = true;
+    existing.isSuperAdmin = true;
+    existing.role = 'Super Admin';
     if (!existing.permissions?.includes('chat')) {
       existing.permissions = [...(existing.permissions || []), 'chat'];
     }
     await existing.save();
-    console.log('Admin password reset to admin123, permissions verified');
+    console.log('Super admin password reset to admin123, permissions verified');
   } else {
     await User.create({
-      username: 'Administrator',
+      username: 'Super Admin',
       email: 'admin@broadcast.com',
       password: hashedPassword,
-      role: 'System Supervisor',
+      role: 'Super Admin',
       isAdmin: true,
+      isSuperAdmin: true,
       permissions: ['dashboard', 'lists', 'compose', 'admin', 'chat'],
     });
-    console.log('Admin user created');
+    console.log('Super admin user created');
   }
 
   const verify = await User.findOne({ email: 'admin@broadcast.com' }).select('+password');
