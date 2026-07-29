@@ -1,9 +1,11 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
+import { Company } from '../models/Company.js';
 import { Setting } from '../models/Setting.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
 import { adminMiddleware } from '../middleware/admin.js';
+
 
 const router = Router();
 router.use(authMiddleware);
@@ -139,6 +141,54 @@ router.get('/guide', async (_req: Request, res: Response) => {
     res.json(guideSettings);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch guide' });
+  }
+});
+
+/* ── Company self-service settings (for company admins) ── */
+
+router.get('/company-settings', async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.companyId) {
+      res.status(400).json({ error: 'No company associated with this user' });
+      return;
+    }
+    const company = await Company.findById(req.companyId).select(
+      'name whatsappAccessToken whatsappPhoneNumberId whatsappBusinessAccountId whatsappVerifyToken whatsappApiVersion'
+    );
+    if (!company) {
+      res.status(404).json({ error: 'Company not found' });
+      return;
+    }
+    res.json(company);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch company settings' });
+  }
+});
+
+router.put('/company-settings', async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.companyId) {
+      res.status(400).json({ error: 'No company associated with this user' });
+      return;
+    }
+    const allowed = [
+      'whatsappAccessToken', 'whatsappPhoneNumberId',
+      'whatsappBusinessAccountId', 'whatsappVerifyToken', 'whatsappApiVersion',
+    ];
+    const update: Record<string, unknown> = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) update[key] = req.body[key];
+    }
+    const company = await Company.findByIdAndUpdate(req.companyId, update, { new: true }).select(
+      'name whatsappAccessToken whatsappPhoneNumberId whatsappBusinessAccountId whatsappVerifyToken whatsappApiVersion'
+    );
+    if (!company) {
+      res.status(404).json({ error: 'Company not found' });
+      return;
+    }
+    res.json(company);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update company settings' });
   }
 });
 

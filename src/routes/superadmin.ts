@@ -121,7 +121,7 @@ router.get('/companies/:id', async (req: Request, res: Response) => {
 
 router.post('/companies', async (req: AuthRequest, res: Response) => {
   try {
-    const { name, email, phone, packageId } = req.body;
+    const { name, email, phone, packageId, adminUsername, adminEmail, adminPassword } = req.body;
     if (!name || !packageId) {
       res.status(400).json({ error: 'Company name and package are required' });
       return;
@@ -144,7 +144,27 @@ router.post('/companies', async (req: AuthRequest, res: Response) => {
       creditsRemaining: pkg.credits,
       createdBy: req.userId,
     });
-    res.status(201).json(company);
+
+    let adminUser = null;
+    if (adminEmail && adminPassword) {
+      const userExists = await User.findOne({ email: adminEmail });
+      if (!userExists) {
+        const hashedPassword = await bcrypt.hash(adminPassword, 10);
+        adminUser = await User.create({
+          username: adminUsername || 'Company Admin',
+          email: adminEmail,
+          password: hashedPassword,
+          role: 'Company Admin',
+          isAdmin: true,
+          companyId: company._id,
+          permissions: ['dashboard', 'lists', 'compose', 'chat', 'admin'],
+        });
+        const { password: _, ...u } = adminUser.toObject();
+        adminUser = u;
+      }
+    }
+
+    res.status(201).json({ ...company.toObject(), adminUser });
   } catch (error) {
     res.status(500).json({ error: 'Failed to create company' });
   }
