@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import { connectDB } from './config/db.js';
+import { Package } from './models/Package.js';
 import authRoutes from './routes/auth.js';
 import listRoutes from './routes/lists.js';
 import contactRoutes from './routes/contacts.js';
@@ -49,6 +50,16 @@ app.get('/api/health', async (_req, res) => {
     db: states[dbState] || 'unknown',
     timestamp: new Date().toISOString()
   });
+});
+
+app.get('/api/public/packages', async (_req, res) => {
+  try {
+    await connectDB();
+    const packages = await Package.find({ isActive: true }).sort({ price: 1 });
+    res.json(packages);
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch packages' });
+  }
 });
 
 let isConnected = false;
