@@ -3,6 +3,11 @@ import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
 import { Company } from '../models/Company.js';
 import { Setting } from '../models/Setting.js';
+import { Package } from '../models/Package.js';
+import { BroadcastLog } from '../models/BroadcastLog.js';
+import { TargetList } from '../models/TargetList.js';
+import { Contact } from '../models/Contact.js';
+import { Template } from '../models/Template.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
 import { adminMiddleware } from '../middleware/admin.js';
 
@@ -10,6 +15,37 @@ import { adminMiddleware } from '../middleware/admin.js';
 const router = Router();
 router.use(authMiddleware);
 router.use(adminMiddleware);
+
+/* ── My Company (for company admins) ── */
+
+router.get('/company', async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.companyId) {
+      res.status(400).json({ error: 'No company associated' });
+      return;
+    }
+    const company = await Company.findById(req.companyId)
+      .populate('packageId')
+      .populate('createdBy', 'username email');
+    if (!company) {
+      res.status(404).json({ error: 'Company not found' });
+      return;
+    }
+    const [userCount, listCount, contactCount, broadcastCount, templateCount] = await Promise.all([
+      User.countDocuments({ companyId: company._id }),
+      TargetList.countDocuments({ companyId: company._id }),
+      Contact.countDocuments({ companyId: company._id }),
+      BroadcastLog.countDocuments({ companyId: company._id }),
+      Template.countDocuments({ companyId: company._id }),
+    ]);
+    res.json({
+      ...company.toObject(),
+      userCount, listCount, contactCount, broadcastCount, templateCount,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch company' });
+  }
+});
 
 router.get('/users', async (req: AuthRequest, res: Response) => {
   try {
