@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface ITargetList extends Document {
   name: string;
@@ -6,6 +6,7 @@ export interface ITargetList extends Document {
   contactCount: number;
   status: 'Active' | 'Verified' | 'Draft' | 'Priority';
   lastSent: string;
+  companyId: Types.ObjectId | null;
 }
 
 const TargetListSchema = new Schema<ITargetList>(
@@ -19,6 +20,7 @@ const TargetListSchema = new Schema<ITargetList>(
       default: 'Active',
     },
     lastSent: { type: String, default: 'Never' },
+    companyId: { type: Schema.Types.ObjectId, ref: 'Company', default: null },
   },
   { timestamps: true }
 );

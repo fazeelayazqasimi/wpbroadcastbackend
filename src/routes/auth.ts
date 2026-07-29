@@ -26,7 +26,7 @@ router.post('/login', async (req: Request, res: Response) => {
       res.status(401).json({ error: 'Invalid credentials' });
       return;
     }
-    const token = jwt.sign({ userId: user._id, isAdmin: user.isAdmin }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: user._id, isAdmin: user.isAdmin, isSuperAdmin: user.isSuperAdmin }, JWT_SECRET, { expiresIn: '7d' });
     const { password: _, ...userWithoutPassword } = user.toObject();
     res.json({ user: userWithoutPassword, token });
   } catch (error: any) {
@@ -44,7 +44,7 @@ router.post('/register', async (req: Request, res: Response) => {
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({ username, email, password: hashedPassword });
-    const token = jwt.sign({ userId: user._id, isAdmin: user.isAdmin }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: user._id, isAdmin: user.isAdmin, isSuperAdmin: user.isSuperAdmin }, JWT_SECRET, { expiresIn: '7d' });
     const { password: _, ...userWithoutPassword } = user.toObject();
     res.status(201).json({ user: userWithoutPassword, token });
   } catch (error) {

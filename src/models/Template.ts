@@ -1,10 +1,11 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface ITemplate extends Document {
   name: string;
   description: string;
   bodyText: string;
   isCurrent: boolean;
+  companyId: Types.ObjectId | null;
 }
 
 const TemplateSchema = new Schema<ITemplate>(
@@ -13,6 +14,7 @@ const TemplateSchema = new Schema<ITemplate>(
     description: { type: String, default: '' },
     bodyText: { type: String, required: true },
     isCurrent: { type: Boolean, default: false },
+    companyId: { type: Schema.Types.ObjectId, ref: 'Company', default: null },
   },
   { timestamps: true }
 );

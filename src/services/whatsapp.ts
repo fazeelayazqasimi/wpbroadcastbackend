@@ -1,6 +1,19 @@
 import { Setting } from '../models/Setting.js';
 
-async function getWACreds() {
+export interface WACreds {
+  token: string;
+  phoneId: string;
+  apiVersion?: string;
+}
+
+async function getWACreds(overrideCreds?: WACreds) {
+  if (overrideCreds?.token && overrideCreds?.phoneId) {
+    return {
+      token: overrideCreds.token,
+      phoneId: overrideCreds.phoneId,
+      verifyToken: 'broadcast_verify',
+    };
+  }
   const token = await Setting.findOne({ key: 'WHATSAPP_ACCESS_TOKEN' });
   const phoneId = await Setting.findOne({ key: 'WHATSAPP_PHONE_NUMBER_ID' });
   const verifyToken = await Setting.findOne({ key: 'WHATSAPP_VERIFY_TOKEN' });
@@ -11,15 +24,17 @@ async function getWACreds() {
   };
 }
 
-export async function sendWAMessage(to: string, body: string) {
-  const { token, phoneId } = await getWACreds();
+export async function sendWAMessage(to: string, body: string, companyCreds?: WACreds) {
+  const { token, phoneId } = await getWACreds(companyCreds);
   if (!token || !phoneId) {
     throw new Error('WhatsApp credentials not configured');
   }
 
+  const apiVersion = companyCreds?.apiVersion || 'v22.0';
+
   const cleanNum = to.replace(/[^0-9]/g, '');
   const res = await fetch(
-    `https://graph.facebook.com/v22.0/${phoneId}/messages`,
+    `https://graph.facebook.com/${apiVersion}/${phoneId}/messages`,
     {
       method: 'POST',
       headers: {

@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface IUser extends Document {
   username: string;
@@ -7,6 +7,8 @@ export interface IUser extends Document {
   role: string;
   avatarUrl: string;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
+  companyId: Types.ObjectId | null;
   permissions: string[];
 }
 
@@ -18,6 +20,8 @@ const UserSchema = new Schema<IUser>(
     role: { type: String, default: 'Operator' },
     avatarUrl: { type: String, default: '' },
     isAdmin: { type: Boolean, default: false },
+    isSuperAdmin: { type: Boolean, default: false },
+    companyId: { type: Schema.Types.ObjectId, ref: 'Company', default: null },
     permissions: { type: [String], default: ['dashboard', 'lists', 'compose'] },
   },
   { timestamps: true }

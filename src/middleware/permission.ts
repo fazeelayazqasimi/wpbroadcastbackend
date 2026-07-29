@@ -10,7 +10,7 @@ export function requirePermission(...pages: string[]) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
-      if (user.isAdmin) {
+      if (user.isAdmin || user.isSuperAdmin) {
         next();
         return;
       }

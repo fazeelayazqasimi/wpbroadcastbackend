@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface IBroadcastLog extends Document {
   listName: string;
@@ -7,6 +7,7 @@ export interface IBroadcastLog extends Document {
   failed: number;
   status: 'Delivered' | 'Pending' | 'Failed';
   dateTime: string;
+  companyId: Types.ObjectId | null;
 }
 
 const BroadcastLogSchema = new Schema<IBroadcastLog>(
@@ -21,6 +22,7 @@ const BroadcastLogSchema = new Schema<IBroadcastLog>(
       default: 'Pending',
     },
     dateTime: { type: String, required: true },
+    companyId: { type: Schema.Types.ObjectId, ref: 'Company', default: null },
   },
   { timestamps: true }
 );

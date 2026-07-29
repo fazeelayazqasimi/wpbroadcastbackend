@@ -4,9 +4,18 @@ import { requirePermission } from '../middleware/permission.js';
 import { Conversation } from '../models/Conversation.js';
 import { Message } from '../models/Message.js';
 import { Contact } from '../models/Contact.js';
+import { Company } from '../models/Company.js';
 import { sendWAMessage, verifyWebhook, parseWebhookPayload } from '../services/whatsapp.js';
 
 const router = Router();
+
+function companyFilter(req: AuthRequest): Record<string, unknown> {
+  if (req.isSuperAdmin) return {};
+  if (req.companyId) return { companyId: req.companyId };
+  return {};
+}
+
+/* ── Webhooks (no auth, global) ── */
 
 router.get('/webhook', async (req: Request, res: Response) => {
   const mode = req.query['hub.mode'] as string;
@@ -38,6 +47,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
         phoneNumber: payload.from,
         contactName: contact?.name || payload.from,
         contactId: contact?._id,
+        companyId: contact?.companyId || null,
         status: 'active',
       });
     }
@@ -61,12 +71,14 @@ router.post('/webhook', async (req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
+/* ── Auth-required routes ── */
+
 router.use(authMiddleware);
 router.use(requirePermission('chat'));
 
-router.get('/conversations', async (_req: Request, res: Response) => {
+router.get('/conversations', async (req: Request, res: Response) => {
   try {
-    const conversations = await Conversation.find({ status: 'active' })
+    const conversations = await Conversation.find({ status: 'active', ...companyFilter(req) })
       .sort({ lastMessageAt: -1 });
     res.json(conversations);
   } catch {
@@ -78,8 +90,8 @@ router.get('/conversations/:id/messages', async (req: Request, res: Response) =>
   try {
     const messages = await Message.find({ conversationId: req.params.id })
       .sort({ createdAt: 1 });
-    const conversation = await Conversation.findByIdAndUpdate(
-      req.params.id,
+    const conversation = await Conversation.findOneAndUpdate(
+      { _id: req.params.id, ...companyFilter(req) },
       { unreadCount: 0 },
       { new: true }
     );
@@ -89,7 +101,7 @@ router.get('/conversations/:id/messages', async (req: Request, res: Response) =>
   }
 });
 
-router.post('/send', async (req: Request, res: Response) => {
+router.post('/send', async (req: AuthRequest, res: Response) => {
   try {
     const { conversationId, body } = req.body;
     if (!conversationId || !body?.trim()) {
@@ -97,7 +109,7 @@ router.post('/send', async (req: Request, res: Response) => {
       return;
     }
 
-    const conversation = await Conversation.findById(conversationId);
+    const conversation = await Conversation.findOne({ _id: conversationId, ...companyFilter(req) });
     if (!conversation) {
       res.status(404).json({ error: 'Conversation not found' });
       return;
@@ -107,7 +119,18 @@ router.post('/send', async (req: Request, res: Response) => {
     let msgStatus: 'sent' | 'failed' = 'sent';
 
     try {
-      const result = await sendWAMessage(conversation.phoneNumber, body.trim());
+      let waCreds = undefined;
+      if (conversation.companyId) {
+        const company = await Company.findById(conversation.companyId);
+        if (company?.whatsappAccessToken) {
+          waCreds = {
+            token: company.whatsappAccessToken,
+            phoneId: company.whatsappPhoneNumberId,
+            apiVersion: company.whatsappApiVersion,
+          };
+        }
+      }
+      const result = await sendWAMessage(conversation.phoneNumber, body.trim(), waCreds);
       waMessageId = result.waMessageId;
     } catch {
       msgStatus = 'failed';
@@ -133,7 +156,7 @@ router.post('/send', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/start', async (req: Request, res: Response) => {
+router.post('/start', async (req: AuthRequest, res: Response) => {
   try {
     const { phoneNumber, contactName, contactId } = req.body;
     if (!phoneNumber) {
@@ -142,14 +165,16 @@ router.post('/start', async (req: Request, res: Response) => {
     }
 
     const clean = phoneNumber.replace(/[^0-9]/g, '');
-    let conversation = await Conversation.findOne({ phoneNumber: clean });
+    let conversation = await Conversation.findOne({ phoneNumber: clean, ...companyFilter(req) });
 
     if (!conversation) {
-      conversation = await Conversation.create({
+      const data: Record<string, unknown> = {
         phoneNumber: clean,
         contactName: contactName || clean,
         contactId: contactId || undefined,
-      });
+      };
+      if (req.companyId && !req.isSuperAdmin) data.companyId = req.companyId;
+      conversation = await Conversation.create(data);
     }
 
     res.status(201).json(conversation);
@@ -158,9 +183,11 @@ router.post('/start', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/contacts', async (_req: Request, res: Response) => {
+router.get('/contacts', async (req: AuthRequest, res: Response) => {
   try {
-    const contacts = await Contact.find({ status: 'Active' })
+    const filter: Record<string, unknown> = { status: 'Active' };
+    if (!req.isSuperAdmin && req.companyId) filter.companyId = req.companyId;
+    const contacts = await Contact.find(filter)
       .select('name phone listId')
       .sort({ name: 1 });
 
@@ -171,7 +198,7 @@ router.get('/contacts', async (_req: Request, res: Response) => {
       grouped[key].push({ name: c.name, phone: c.phone, _id: c._id.toString() });
     }
 
-    const existingConversations = await Conversation.find().select('phoneNumber');
+    const existingConversations = await Conversation.find(companyFilter(req)).select('phoneNumber');
     const existingPhones = new Set(existingConversations.map(c => c.phoneNumber));
 
     const result = Object.entries(grouped).map(([listId, listContacts]) => ({

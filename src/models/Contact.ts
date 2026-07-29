@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface IContact extends Document {
   listId: mongoose.Types.ObjectId;
@@ -6,6 +6,7 @@ export interface IContact extends Document {
   phone: string;
   status: 'Active' | 'Opted-out';
   lastBroadcast: string;
+  companyId: Types.ObjectId | null;
 }
 
 const ContactSchema = new Schema<IContact>(
@@ -19,6 +20,7 @@ const ContactSchema = new Schema<IContact>(
       default: 'Active',
     },
     lastBroadcast: { type: String, default: 'Never' },
+    companyId: { type: Schema.Types.ObjectId, ref: 'Company', default: null },
   },
   { timestamps: true }
 );

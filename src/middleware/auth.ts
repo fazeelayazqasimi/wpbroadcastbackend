@@ -7,6 +7,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'broadcast_panel_jwt_secret_key_202
 export interface AuthRequest extends Request {
   userId?: string;
   isAdmin?: boolean;
+  isSuperAdmin?: boolean;
+  companyId?: string | null;
   permissions?: string[];
 }
 
@@ -33,6 +35,8 @@ export async function loadUser(req: AuthRequest, res: Response, next: NextFuncti
       const user = await User.findById(req.userId).select('-password');
       if (user) {
         req.isAdmin = user.isAdmin;
+        req.isSuperAdmin = user.isSuperAdmin;
+        req.companyId = user.companyId?.toString() || null;
         req.permissions = user.permissions;
       }
     }

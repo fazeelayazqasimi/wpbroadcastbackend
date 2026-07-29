@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { connectDB } from './config/db.js';
 import { User } from './models/User.js';
+import { Package } from './models/Package.js';
 import { Setting } from './models/Setting.js';
 import { Template } from './models/Template.js';
 import { TargetList } from './models/TargetList.js';
@@ -21,17 +22,61 @@ async function seed() {
   const existingUser = await User.findOne({ email: 'admin@broadcast.com' });
   if (!existingUser) {
     await User.create({
-      username: 'Administrator',
+      username: 'Super Admin',
       email: 'admin@broadcast.com',
       password: hashedPassword,
-      role: 'System Supervisor',
+      role: 'Super Admin',
       avatarUrl: '',
       isAdmin: true,
+      isSuperAdmin: true,
       permissions: ['dashboard', 'lists', 'compose', 'admin', 'chat'],
     });
-    console.log('Created admin user (admin@broadcast.com / admin123)');
+    console.log('Created super admin user (admin@broadcast.com / admin123)');
   } else {
     console.log('Admin user already exists, skipping.');
+  }
+
+  /* ── Packages ── */
+  const existingPackages = await Package.countDocuments();
+  if (existingPackages === 0) {
+    await Package.create([
+      {
+        name: 'Basic',
+        description: 'Starter package for small teams. Includes 500 credits, 3 users, and 5 lists.',
+        price: 0,
+        credits: 500,
+        maxUsers: 3,
+        maxLists: 5,
+        features: ['dashboard', 'lists', 'compose'],
+        durationDays: 30,
+        isActive: true,
+      },
+      {
+        name: 'Professional',
+        description: 'Best for growing businesses. Includes 2500 credits, 10 users, and 20 lists.',
+        price: 99,
+        credits: 2500,
+        maxUsers: 10,
+        maxLists: 20,
+        features: ['dashboard', 'lists', 'compose', 'chat'],
+        durationDays: 30,
+        isActive: true,
+      },
+      {
+        name: 'Enterprise',
+        description: 'Unlimited credits, users, and lists with priority support and all features.',
+        price: 299,
+        credits: 10000,
+        maxUsers: 999,
+        maxLists: 999,
+        features: ['dashboard', 'lists', 'compose', 'chat', 'admin'],
+        durationDays: 30,
+        isActive: true,
+      },
+    ]);
+    console.log('Created 3 packages (Basic, Professional, Enterprise)');
+  } else {
+    console.log('Packages already exist, skipping.');
   }
 
   await Setting.create([

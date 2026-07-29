@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface IConversation extends Document {
   phoneNumber: string;
@@ -10,6 +10,7 @@ export interface IConversation extends Document {
   unreadCount: number;
   assignedTo?: string;
   status: 'active' | 'archived';
+  companyId: Types.ObjectId | null;
 }
 
 const ConversationSchema = new Schema<IConversation>(
@@ -23,6 +24,7 @@ const ConversationSchema = new Schema<IConversation>(
     unreadCount: { type: Number, default: 0 },
     assignedTo: { type: String },
     status: { type: String, enum: ['active', 'archived'], default: 'active' },
+    companyId: { type: Schema.Types.ObjectId, ref: 'Company', default: null },
   },
   { timestamps: true }
 );
