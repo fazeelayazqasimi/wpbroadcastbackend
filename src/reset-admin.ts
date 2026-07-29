@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs';
 async function reset() {
   await connectDB();
 
-  const hashedPassword = await bcrypt.hash('admin123', 10);
+  const hashedPassword = await bcrypt.hash('Admin@123!', 10);
 
   const existing = await User.findOne({ email: 'admin@broadcast.com' });
   if (existing) {
@@ -19,7 +19,7 @@ async function reset() {
       existing.permissions = [...(existing.permissions || []), 'chat'];
     }
     await existing.save();
-    console.log('Super admin password reset to admin123, permissions verified');
+    console.log('Super admin password reset to Admin@123!, permissions verified');
   } else {
     await User.create({
       username: 'Super Admin',
@@ -35,7 +35,7 @@ async function reset() {
 
   const verify = await User.findOne({ email: 'admin@broadcast.com' }).select('+password');
   if (verify) {
-    const match = await bcrypt.compare('admin123', verify.password);
+    const match = await bcrypt.compare('Admin@123!', verify.password);
     console.log('Password verification:', match ? 'OK' : 'FAILED');
   }
 
