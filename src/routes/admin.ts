@@ -11,16 +11,20 @@ const router = Router();
 router.use(authMiddleware);
 router.use(adminMiddleware);
 
-router.get('/users', async (_req: Request, res: Response) => {
+router.get('/users', async (req: AuthRequest, res: Response) => {
   try {
-    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    const filter: Record<string, unknown> = {};
+    if (req.companyId && !req.isSuperAdmin) {
+      filter.companyId = req.companyId;
+    }
+    const users = await User.find(filter).select('-password').sort({ createdAt: -1 });
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
 
-router.post('/users', async (req: Request, res: Response) => {
+router.post('/users', async (req: AuthRequest, res: Response) => {
   try {
     const { username, email, password, role, isAdmin, permissions } = req.body;
     const existing = await User.findOne({ email });
@@ -29,14 +33,18 @@ router.post('/users', async (req: Request, res: Response) => {
       return;
     }
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({
+    const userData: Record<string, unknown> = {
       username,
       email,
       password: hashedPassword,
       role: role || 'Operator',
       isAdmin: isAdmin || false,
       permissions: permissions || [],
-    });
+    };
+    if (req.companyId && !req.isSuperAdmin) {
+      userData.companyId = req.companyId;
+    }
+    const user = await User.create(userData);
     const { password: _, ...userWithoutPassword } = user.toObject();
     res.status(201).json(userWithoutPassword);
   } catch (error) {
@@ -44,7 +52,7 @@ router.post('/users', async (req: Request, res: Response) => {
   }
 });
 
-router.put('/users/:id', async (req: Request, res: Response) => {
+router.put('/users/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { username, email, password, role, isAdmin, permissions } = req.body;
     const updateData: Record<string, unknown> = {};
@@ -56,7 +64,11 @@ router.put('/users/:id', async (req: Request, res: Response) => {
     if (password) {
       updateData.password = await bcrypt.hash(password, 10);
     }
-    const user = await User.findByIdAndUpdate(req.params.id, updateData, { new: true }).select('-password');
+    const filter: Record<string, unknown> = { _id: req.params.id };
+    if (req.companyId && !req.isSuperAdmin) {
+      filter.companyId = req.companyId;
+    }
+    const user = await User.findOneAndUpdate(filter, updateData, { new: true }).select('-password');
     if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;
@@ -67,9 +79,13 @@ router.put('/users/:id', async (req: Request, res: Response) => {
   }
 });
 
-router.delete('/users/:id', async (req: Request, res: Response) => {
+router.delete('/users/:id', async (req: AuthRequest, res: Response) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const filter: Record<string, unknown> = { _id: req.params.id };
+    if (req.companyId && !req.isSuperAdmin) {
+      filter.companyId = req.companyId;
+    }
+    const user = await User.findOneAndDelete(filter);
     if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;

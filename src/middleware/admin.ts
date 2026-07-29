@@ -9,6 +9,10 @@ export async function adminMiddleware(req: AuthRequest, res: Response, next: Nex
       res.status(403).json({ error: 'Admin access required' });
       return;
     }
+    req.isAdmin = user.isAdmin;
+    req.isSuperAdmin = user.isSuperAdmin;
+    req.companyId = user.companyId?.toString() || null;
+    req.permissions = user.permissions;
     next();
   } catch {
     res.status(500).json({ error: 'Authorization check failed' });

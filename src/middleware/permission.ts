@@ -11,6 +11,10 @@ export function requirePermission(...pages: string[]) {
         return;
       }
       if (user.isAdmin || user.isSuperAdmin) {
+        req.isAdmin = user.isAdmin;
+        req.isSuperAdmin = user.isSuperAdmin;
+        req.companyId = user.companyId?.toString() || null;
+        req.permissions = user.permissions;
         next();
         return;
       }
@@ -19,6 +23,8 @@ export function requirePermission(...pages: string[]) {
         res.status(403).json({ error: 'Access denied. You do not have permission for this resource.' });
         return;
       }
+      req.companyId = user.companyId?.toString() || null;
+      req.permissions = user.permissions;
       next();
     } catch {
       res.status(500).json({ error: 'Permission check failed' });
