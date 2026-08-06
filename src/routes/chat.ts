@@ -39,10 +39,13 @@ router.post('/webhook', async (req: Request, res: Response) => {
   }
 
   try {
-    let conversation = await Conversation.findOne({ phoneNumber: payload.from });
+    const contact = await Contact.findOne({ phone: { $regex: payload.from.replace(/[^0-9]/g, '') } });
+    let conversation = await Conversation.findOne({
+      phoneNumber: payload.from,
+      ...(contact?.companyId ? { companyId: contact.companyId } : {}),
+    });
 
     if (!conversation) {
-      const contact = await Contact.findOne({ phone: { $regex: payload.from.replace(/[^0-9]/g, '') } });
       conversation = await Conversation.create({
         phoneNumber: payload.from,
         contactName: contact?.name || payload.from,
@@ -168,6 +171,16 @@ router.post('/start', async (req: AuthRequest, res: Response) => {
     let conversation = await Conversation.findOne({ phoneNumber: clean, ...companyFilter(req) });
 
     if (!conversation) {
+      conversation = await Conversation.findOne({ phoneNumber: clean, companyId: null });
+      if (conversation && req.companyId && !req.isSuperAdmin) {
+        conversation.companyId = req.companyId as any;
+        conversation.contactName = contactName || conversation.contactName;
+        if (contactId) conversation.contactId = contactId;
+        await conversation.save();
+      }
+    }
+
+    if (!conversation) {
       const data: Record<string, unknown> = {
         phoneNumber: clean,
         contactName: contactName || clean,
@@ -178,8 +191,8 @@ router.post('/start', async (req: AuthRequest, res: Response) => {
     }
 
     res.status(201).json(conversation);
-  } catch {
-    res.status(500).json({ error: 'Failed to start conversation' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to start conversation', detail: err?.message || String(err) });
   }
 });
 

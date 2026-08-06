@@ -15,7 +15,7 @@ export interface IConversation extends Document {
 
 const ConversationSchema = new Schema<IConversation>(
   {
-    phoneNumber: { type: String, required: true, unique: true },
+    phoneNumber: { type: String, required: true },
     contactName: { type: String, required: true },
     contactId: { type: Schema.Types.ObjectId, ref: 'Contact' },
     lastMessage: { type: String, default: '' },
